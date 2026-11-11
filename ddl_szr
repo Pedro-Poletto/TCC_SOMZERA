@@ -1,0 +1,462 @@
+
+-- =========================================================
+-- SOMZERA - SCRIPT COMPLETO DO BANCO DE DADOS
+-- SGBD: MICROSOFT SQL SERVER (SSMS)
+-- COM DYNAMIC DATA MASKING
+-- =========================================================
+
+
+-- =========================================================
+-- 1. TABELAS PRINCIPAIS
+-- =========================================================
+
+CREATE TABLE TB_SZR_ENDERECO (
+    id_endereco INT NOT NULL,
+    sg_estado CHAR(2) NOT NULL,
+    nm_cidade VARCHAR(80) NOT NULL,
+    nm_bairro VARCHAR(80) NOT NULL,
+    nm_logradouro VARCHAR(80) NOT NULL,
+    nr_latitude DECIMAL(10,8) NOT NULL,
+    nr_longitude DECIMAL(11,8) NOT NULL,
+
+    CONSTRAINT PK_SZR_ENDERECO
+        PRIMARY KEY (id_endereco),
+
+    CONSTRAINT CK_SZR_ENDERECO_NR_LATITUDE
+        CHECK (nr_latitude BETWEEN -90 AND 90),
+
+    CONSTRAINT CK_SZR_ENDERECO_NR_LONGITUDE
+        CHECK (nr_longitude BETWEEN -180 AND 180)
+);
+
+
+CREATE TABLE TB_SZR_USUARIO (
+    id_usuario INT NOT NULL,
+    TB_SZR_ENDERECO_id_endereco INT NOT NULL,
+    nm_usuario VARCHAR(80) NOT NULL,
+    ds_email VARCHAR(120) NOT NULL,
+    sg_categoria_usuario CHAR(2) NOT NULL,
+    url_img_perfil VARCHAR(4000) NOT NULL,
+    bio_usuario VARCHAR(250),
+    ds_senha VARCHAR(255) NOT NULL,
+    ds_url_contato VARCHAR(4000) NOT NULL,
+
+    CONSTRAINT PK_SZR_USUARIO
+        PRIMARY KEY (id_usuario),
+
+    CONSTRAINT UN_SZR_USUARIO_DS_EMAIL
+        UNIQUE (ds_email),
+
+    CONSTRAINT CK_SZR_USUARIO_SG_CATEGORIA_USUARIO
+        CHECK (sg_categoria_usuario IN ('BS', 'P1', 'P2', 'P3')),
+
+    CONSTRAINT FK_SZR_USUARIO_SZR_ENDERECO
+        FOREIGN KEY (TB_SZR_ENDERECO_id_endereco)
+        REFERENCES TB_SZR_ENDERECO (id_endereco)
+);
+
+
+CREATE TABLE TB_SZR_TAG (
+    id_tag INT NOT NULL,
+    nm_tag VARCHAR(80) NOT NULL,
+    ds_tag VARCHAR(250) NOT NULL,
+
+    CONSTRAINT PK_SZR_TAG
+        PRIMARY KEY (id_tag)
+);
+
+
+CREATE TABLE TB_SZR_HABILIDADE (
+    id_habilidade INT NOT NULL,
+    nm_habilidade VARCHAR(80),
+    ds_habilidade VARCHAR(250) NOT NULL,
+
+    CONSTRAINT PK_SZR_HABILIDADE
+        PRIMARY KEY (id_habilidade)
+);
+
+
+CREATE TABLE TB_SZR_MUSICA (
+    id_musica INT NOT NULL,
+    duracao_segundos INT NOT NULL,
+    nm_musica VARCHAR(80) NOT NULL,
+
+    ds_musica VARCHAR(250)
+        CONSTRAINT DF_SZR_MUSICA_DS_MUSICA
+        DEFAULT ('MÚSICA SEM DESCRIÇÃO'),
+
+    ds_letra VARCHAR(MAX)
+        CONSTRAINT DF_SZR_MUSICA_DS_LETRA
+        DEFAULT ('SEM LETRA FORNECIDA'),
+
+    ds_url_musica VARCHAR(4000) NOT NULL,
+
+    CONSTRAINT PK_SZR_MUSICA
+        PRIMARY KEY (id_musica),
+
+    CONSTRAINT CK_SZR_MUSICA_DURACAO_SEGUNDOS
+        CHECK (duracao_segundos >= 0)
+);
+
+
+CREATE TABLE TB_SZR_OBRA (
+    id_obra INT NOT NULL,
+    nm_obra VARCHAR(80) NOT NULL,
+
+    ds_obra VARCHAR(250)
+        CONSTRAINT DF_SZR_OBRA_DS_OBRA
+        DEFAULT ('OBRA SEM DESCRIÇÃO'),
+
+    sg_classificacao CHAR(1) NOT NULL,
+    ds_url_img_capa VARCHAR(4000) NOT NULL,
+    dt_lancamento DATE NOT NULL,
+
+    CONSTRAINT PK_SZR_OBRA
+        PRIMARY KEY (id_obra)
+);
+
+
+CREATE TABLE TB_SZR_PLAYLIST (
+    id_playlist INT NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+    nm_playlist VARCHAR(80) NOT NULL,
+    ds_url_img_capa VARCHAR(4000) NOT NULL,
+    ds_playlist VARCHAR(250) NOT NULL,
+    dt_criacao DATETIME2 NOT NULL,
+
+    CONSTRAINT PK_SZR_PLAYLIST
+        PRIMARY KEY (id_playlist),
+
+    CONSTRAINT FK_SZR_PLAYLIST_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+CREATE TABLE TB_SZR_RESENHA (
+    id_resenha INT NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+    ds_resenha VARCHAR(500) NOT NULL,
+    dt_publicacao DATETIME2 NOT NULL,
+
+    CONSTRAINT PK_SZR_RESENHA
+        PRIMARY KEY (id_resenha),
+
+    CONSTRAINT FK_SZR_RESENHA_SZR_MUSICA
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica),
+
+    CONSTRAINT FK_SZR_RESENHA_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+-- =========================================================
+-- 2. TABELAS DE CLIPE E ARQUIVOS
+-- =========================================================
+
+CREATE TABLE TB_SZR_CLIPE (
+    id_clipe INT NOT NULL,
+    ds_url_img_capa VARCHAR(4000) NOT NULL,
+    caminho_url VARCHAR(4000) NOT NULL,
+    dt_publicacao DATETIME2 NOT NULL,
+    nr_duracao_segundos INT NOT NULL,
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+
+    CONSTRAINT PK_SZR_CLIPE
+        PRIMARY KEY (id_clipe),
+
+    CONSTRAINT UN_SZR_CLIPE_FK_MUSICA
+        UNIQUE (TB_SZR_MUSICA_id_musica),
+
+    CONSTRAINT CK_SZR_CLIPE_NR_DURACAO_SEGUNDOS
+        CHECK (nr_duracao_segundos >= 0),
+
+    CONSTRAINT FK_SZR_CLIPE_SZR_MUSICA
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica)
+);
+
+
+CREATE TABLE TB_SZR_ARQUIVO_RASCUNHO (
+    id_arquivo INT NOT NULL,
+    nm_arquivo VARCHAR(80) NOT NULL,
+    ds_arquivo VARCHAR(250) NOT NULL,
+    ds_url_arquivo VARCHAR(4000) NOT NULL,
+    sg_tipo_arquivo CHAR(3) NOT NULL,
+    dt_upload DATETIME2 NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+
+    CONSTRAINT PK_SZR_ARQUIVO_RASCUNHO
+        PRIMARY KEY (id_arquivo),
+
+    CONSTRAINT CK_SZR_ARQUIVO_RASCUNHO_SG_TIPO_ARQUIVO
+        CHECK (sg_tipo_arquivo IN ('ANT', 'DEM', 'IMG', 'LTR', 'AUD')),
+
+    CONSTRAINT FK_SZR_ARQUIVO_RASCUNHO_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+-- =========================================================
+-- 3. TABELA SINGLE
+-- =========================================================
+
+CREATE TABLE TB_SZR_SINGLE (
+    id_single INT NOT NULL,
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+
+    CONSTRAINT PK_SZR_SINGLE
+        PRIMARY KEY (id_single),
+
+    CONSTRAINT FK_SZR_SINGLE_SZR_MUSICA
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica)
+);
+
+
+-- =========================================================
+-- 4. TABELAS ASSOCIATIVAS
+-- =========================================================
+
+CREATE TABLE TB_A_MUSICA_TAG (
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+    TB_SZR_TAG_id_tag INT NOT NULL,
+
+    CONSTRAINT PK_A_MUSICA_TAG
+        PRIMARY KEY (
+            TB_SZR_MUSICA_id_musica,
+            TB_SZR_TAG_id_tag
+        ),
+
+    CONSTRAINT PF_SZR_MUSICA_A_SZR_TAG
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica),
+
+    CONSTRAINT PF_SZR_TAG_A_SZR_MUSICA
+        FOREIGN KEY (TB_SZR_TAG_id_tag)
+        REFERENCES TB_SZR_TAG (id_tag)
+);
+
+
+CREATE TABLE TB_A_MUSICO_HABILIDADE (
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+    TB_SZR_HABILIDADE_id_habilidade INT NOT NULL,
+
+    CONSTRAINT PK_A_MUSICO_HABILIDADE
+        PRIMARY KEY (
+            TB_SZR_USUARIO_id_usuario,
+            TB_SZR_HABILIDADE_id_habilidade
+        ),
+
+    CONSTRAINT PF_SZR_USUARIO_A_SZR_HABILIDADE
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario),
+
+    CONSTRAINT PF_SZR_HABILIDADE_A_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_HABILIDADE_id_habilidade)
+        REFERENCES TB_SZR_HABILIDADE (id_habilidade)
+);
+
+
+CREATE TABLE TB_A_MUSICO_MUSICA_AUTORIA (
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+
+    CONSTRAINT PK_A_MUSICO_MUSICA_AUTORIA
+        PRIMARY KEY (
+            TB_SZR_MUSICA_id_musica,
+            TB_SZR_USUARIO_id_usuario
+        ),
+
+    CONSTRAINT PF_SZR_MUSICA_A_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica),
+
+    CONSTRAINT PF_SZR_USUARIO_A_SZR_MUSICA
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+CREATE TABLE TB_A_PLAYLIST_MUSICA (
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+    TB_SZR_PLAYLIST_id_playlist INT NOT NULL,
+
+    CONSTRAINT PK_A_PLAYLIST_MUSICA
+        PRIMARY KEY (
+            TB_SZR_MUSICA_id_musica,
+            TB_SZR_PLAYLIST_id_playlist
+        ),
+
+    CONSTRAINT PF_SZR_MUSICA_A_SZR_PLAYLIST
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica),
+
+    CONSTRAINT PF_SZR_PLAYLIST_A_SZR_MUSICA
+        FOREIGN KEY (TB_SZR_PLAYLIST_id_playlist)
+        REFERENCES TB_SZR_PLAYLIST (id_playlist)
+);
+
+
+CREATE TABLE TB_A_USUARIO_MUSICA_CURTIDA (
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+    dt_curtida DATETIME2 NOT NULL,
+
+    CONSTRAINT PK_A_USUARIO_MUSICA_CURTIDA
+        PRIMARY KEY (
+            TB_SZR_MUSICA_id_musica,
+            TB_SZR_USUARIO_id_usuario
+        ),
+
+    CONSTRAINT PF_SZR_MUSICA_A_SZR_USUARIO_CURTIDA
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica),
+
+    CONSTRAINT PF_SZR_USUARIO_A_SZR_MUSICA_CURTIDA
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+CREATE TABLE TB_A_USUARIO_MUSICA_HISTORICO (
+    id_historico INT NOT NULL,
+    TB_SZR_MUSICA_id_musica INT NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+    dt_historico DATETIME2 NOT NULL,
+
+    CONSTRAINT PK_A_USUARIO_MUSICA_HISTORICO
+        PRIMARY KEY (id_historico),
+
+    CONSTRAINT PF_SZR_MUSICA_A_SZR_USUARIO_HISTORICO
+        FOREIGN KEY (TB_SZR_MUSICA_id_musica)
+        REFERENCES TB_SZR_MUSICA (id_musica),
+
+    CONSTRAINT PF_SZR_USUARIO_A_SZR_MUSICA_HISTORICO
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+CREATE TABLE TB_A_USUARIO_OBRA (
+    TB_SZR_OBRA_id_obra INT NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+
+    CONSTRAINT PK_A_USUARIO_OBRA
+        PRIMARY KEY (
+            TB_SZR_OBRA_id_obra,
+            TB_SZR_USUARIO_id_usuario
+        ),
+
+    CONSTRAINT PF_SZR_OBRA_A_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_OBRA_id_obra)
+        REFERENCES TB_SZR_OBRA (id_obra),
+
+    CONSTRAINT PF_SZR_USUARIO_A_SZR_OBRA
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+CREATE TABLE TB_A_USUARIO_SINGLE (
+    TB_SZR_SINGLE_id_single INT NOT NULL,
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+
+    CONSTRAINT PK_A_USUARIO_SINGLE
+        PRIMARY KEY (
+            TB_SZR_SINGLE_id_single,
+            TB_SZR_USUARIO_id_usuario
+        ),
+
+    CONSTRAINT PF_SZR_SINGLE_A_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_SINGLE_id_single)
+        REFERENCES TB_SZR_SINGLE (id_single),
+
+    CONSTRAINT PF_SZR_USUARIO_A_SZR_SINGLE
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario)
+);
+
+
+CREATE TABLE TB_A_USUARIO_TAG (
+    TB_SZR_USUARIO_id_usuario INT NOT NULL,
+    TB_SZR_TAG_id_tag INT NOT NULL,
+
+    CONSTRAINT PK_A_USUARIO_TAG
+        PRIMARY KEY (
+            TB_SZR_USUARIO_id_usuario,
+            TB_SZR_TAG_id_tag
+        ),
+
+    CONSTRAINT PF_SZR_USUARIO_A_SZR_TAG
+        FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
+        REFERENCES TB_SZR_USUARIO (id_usuario),
+
+    CONSTRAINT PF_SZR_TAG_A_SZR_USUARIO
+        FOREIGN KEY (TB_SZR_TAG_id_tag)
+        REFERENCES TB_SZR_TAG (id_tag)
+);
+
+
+-- =========================================================
+-- 5. MASCARAMENTO DINAMICO DE DADOS (DDM)
+-- =========================================================
+
+-- USUARIO: e-mail
+ALTER TABLE TB_SZR_USUARIO
+ALTER COLUMN ds_email
+ADD MASKED WITH (FUNCTION = 'email()');
+
+
+-- USUARIO: nome parcialmente visível
+ALTER TABLE TB_SZR_USUARIO
+ALTER COLUMN nm_usuario
+ADD MASKED WITH (FUNCTION = 'partial(1,"XXXX",0)');
+
+
+-- USUARIO: biografia ocultada
+ALTER TABLE TB_SZR_USUARIO
+ALTER COLUMN bio_usuario
+ADD MASKED WITH (FUNCTION = 'default()');
+
+
+-- USUARIO: endereço de contato ocultado
+ALTER TABLE TB_SZR_USUARIO
+ALTER COLUMN ds_url_contato
+ADD MASKED WITH (FUNCTION = 'default()');
+
+
+-- USUARIO: URL da imagem de perfil ocultada
+ALTER TABLE TB_SZR_USUARIO
+ALTER COLUMN url_img_perfil
+ADD MASKED WITH (FUNCTION = 'default()');
+
+
+-- ENDERECO: bairro ocultado
+ALTER TABLE TB_SZR_ENDERECO
+ALTER COLUMN nm_bairro
+ADD MASKED WITH (FUNCTION = 'default()');
+
+
+-- ENDERECO: logradouro ocultado
+ALTER TABLE TB_SZR_ENDERECO
+ALTER COLUMN nm_logradouro
+ADD MASKED WITH (FUNCTION = 'default()');
+
+
+-- ENDERECO: latitude ocultada
+ALTER TABLE TB_SZR_ENDERECO
+ALTER COLUMN nr_latitude
+ADD MASKED WITH (FUNCTION = 'default()');
+
+
+-- ENDERECO: longitude ocultada
+ALTER TABLE TB_SZR_ENDERECO
+ALTER COLUMN nr_longitude
+ADD MASKED WITH (FUNCTION = 'default()');
+
+
