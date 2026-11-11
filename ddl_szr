@@ -413,3 +413,61 @@ ADD MASKED WITH (FUNCTION = 'default()')
 ALTER TABLE TB_SZR_ENDERECO
 ALTER COLUMN nr_longitude
 ADD MASKED WITH (FUNCTION = 'default()')
+
+
+-- =============================================
+-- ÍNDICES - BANCO DE DADOS SOMZERA
+-- =============================================
+
+-- 1. Pesquisa de usuários por nome
+CREATE INDEX IX_SZR_USUARIO_NOME
+    ON TB_SZR_USUARIO (nm_usuario)
+
+
+-- 2. Pesquisa de músicas por nome
+CREATE INDEX IX_SZR_MUSICA_NOME
+    ON TB_SZR_MUSICA (nm_musica)
+
+
+-- 3. Localização de usuários
+CREATE INDEX IX_SZR_USUARIO_ENDERECO
+    ON TB_SZR_USUARIO (TB_SZR_ENDERECO_id_endereco)
+
+
+-- 4. Playlists por usuário
+CREATE INDEX IX_SZR_PLAYLIST_USUARIO
+    ON TB_SZR_PLAYLIST (TB_SZR_USUARIO_id_usuario)
+
+
+-- 5. Músicas por tag
+CREATE INDEX IX_SZR_MUSICA_TAG_TAG
+    ON TB_A_MUSICA_TAG (TB_SZR_TAG_id_tag)
+
+
+-- 6. Curtidas por música
+CREATE INDEX IX_SZR_CURTIDA_MUSICA
+    ON TB_A_USUARIO_MUSICA_CURTIDA (TB_SZR_MUSICA_id_musica)
+
+
+-- 7. Histórico por usuário e data
+CREATE INDEX IX_SZR_HISTORICO_USUARIO_DATA
+    ON TB_A_USUARIO_MUSICA_HISTORICO
+    (
+    TB_SZR_USUARIO_id_usuario,
+    dt_historico
+    )
+
+
+-- 8. Resenhas por música
+CREATE INDEX IX_SZR_RESENHA_MUSICA
+    ON TB_SZR_RESENHA (TB_SZR_MUSICA_id_musica)
+
+
+-- 9. Arquivos por usuário
+CREATE INDEX IX_SZR_ARQUIVO_USUARIO
+    ON TB_SZR_ARQUIVO_RASCUNHO (TB_SZR_USUARIO_id_usuario)
+
+
+-- 10. Músicos por habilidade
+CREATE INDEX IX_SZR_MUSICO_HABILIDADE
+    ON TB_A_MUSICO_HABILIDADE (TB_SZR_HABILIDADE_id_habilidade)
