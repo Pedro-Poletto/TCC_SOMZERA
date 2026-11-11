@@ -1,6 +1,4 @@
--- =========================================================
 -- 1. TABELAS PRINCIPAIS
--- =========================================================
 
 CREATE TABLE TB_SZR_ENDERECO (
     id_endereco     INT NOT NULL,
@@ -144,10 +142,7 @@ CREATE TABLE TB_SZR_RESENHA (
         REFERENCES TB_SZR_USUARIO (id_usuario)
 )
 
-
--- =========================================================
 -- 2. TABELAS DO CLIPE E ARQUIVOS
--- =========================================================
 
 CREATE TABLE TB_SZR_CLIPE (
     id_clipe                INT NOT NULL,
@@ -191,11 +186,7 @@ CREATE TABLE TB_SZR_ARQUIVO_RASCUNHO (
         FOREIGN KEY (TB_SZR_USUARIO_id_usuario)
         REFERENCES TB_SZR_USUARIO (id_usuario)
 )
-
-
--- =========================================================
 -- 4. TABELAS ASSOCIATIVAS
--- =========================================================
 
 CREATE TABLE TB_A_MUSICA_TAG (
     TB_SZR_MUSICA_id_musica INT NOT NULL,
@@ -356,100 +347,104 @@ CREATE TABLE TB_A_USUARIO_TAG (
         REFERENCES TB_SZR_TAG (id_tag)
 )
 
+-- 5. MASCARAMENTO DE DADOS
 
--- =========================================================
--- 5. MASCARAMENTO DINAMICO DE DADOS (DDM)
--- =========================================================
-
--- USUARIO: e-mail
+-- USUARIO: E-MAIL
 ALTER TABLE TB_SZR_USUARIO
 ALTER COLUMN ds_email
 ADD MASKED WITH (FUNCTION = 'email()')
 
+/* MANTÉM?? */
 
 -- USUARIO: nome parcialmente visível
 ALTER TABLE TB_SZR_USUARIO
 ALTER COLUMN nm_usuario
 ADD MASKED WITH (FUNCTION = 'partial(1,"XXXX",0)')
 
-
+/* MANTÉM?? */
 -- USUARIO: biografia ocultada
 ALTER TABLE TB_SZR_USUARIO
 ALTER COLUMN bio_usuario
 ADD MASKED WITH (FUNCTION = 'default()')
 
 
--- USUARIO: endereço de contato ocultado
+-- USUARIO: ENDEREÇO CONTATO OCULTADO
 ALTER TABLE TB_SZR_USUARIO
 ALTER COLUMN ds_url_contato
 ADD MASKED WITH (FUNCTION = 'default()')
 
 
--- USUARIO: URL da imagem de perfil ocultada
+-- USUARIO: URL IMAGEM PERFIL OCULTADA
 ALTER TABLE TB_SZR_USUARIO
 ALTER COLUMN url_img_perfil
 ADD MASKED WITH (FUNCTION = 'default()')
 
 
--- ENDERECO: bairro ocultado
+-- ENDERECO: BAIRRO OCULTADO
 ALTER TABLE TB_SZR_ENDERECO
 ALTER COLUMN nm_bairro
 ADD MASKED WITH (FUNCTION = 'default()')
 
 
--- ENDERECO: logradouro ocultado
+-- ENDERECO: LOGRADOURO OCULTADO
 ALTER TABLE TB_SZR_ENDERECO
 ALTER COLUMN nm_logradouro
 ADD MASKED WITH (FUNCTION = 'default()')
 
 
--- ENDERECO: latitude ocultada
+-- ENDERECO: LATITUDE OCULTADA
+
 ALTER TABLE TB_SZR_ENDERECO
 ALTER COLUMN nr_latitude
 ADD MASKED WITH (FUNCTION = 'default()')
 
 
--- ENDERECO: longitude ocultada
+-- ENDERECO: LONGITUDE OCULTADA
+
 ALTER TABLE TB_SZR_ENDERECO
 ALTER COLUMN nr_longitude
 ADD MASKED WITH (FUNCTION = 'default()')
 
-
--- =============================================
 -- ÍNDICES - BANCO DE DADOS SOMZERA
--- =============================================
 
--- 1. Pesquisa de usuários por nome
+-- 1. PESQUISA DE USUARIO POR NOME
+
 CREATE INDEX IX_SZR_USUARIO_NOME
     ON TB_SZR_USUARIO (nm_usuario)
 
 
--- 2. Pesquisa de músicas por nome
+-- 2. PESQUISA DE MÚSICA POR NOME
+
 CREATE INDEX IX_SZR_MUSICA_NOME
     ON TB_SZR_MUSICA (nm_musica)
 
 
--- 3. Localização de usuários
+-- 3. ENDEREÇO DO USUARIO
+
 CREATE INDEX IX_SZR_USUARIO_ENDERECO
     ON TB_SZR_USUARIO (TB_SZR_ENDERECO_id_endereco)
 
 
--- 4. Playlists por usuário
+-- 4. PLAYLIST POR USUARIO
+
 CREATE INDEX IX_SZR_PLAYLIST_USUARIO
     ON TB_SZR_PLAYLIST (TB_SZR_USUARIO_id_usuario)
 
 
--- 5. Músicas por tag
+-- 5. MÚSICA POR TAH
+
 CREATE INDEX IX_SZR_MUSICA_TAG_TAG
     ON TB_A_MUSICA_TAG (TB_SZR_TAG_id_tag)
 
 
--- 6. Curtidas por música
+-- 6. CURTIDA POR MÚSICA
+
 CREATE INDEX IX_SZR_CURTIDA_MUSICA
     ON TB_A_USUARIO_MUSICA_CURTIDA (TB_SZR_MUSICA_id_musica)
 
 
--- 7. Histórico por usuário e data
+-- 7. HISTORICO POR DATA
+
 CREATE INDEX IX_SZR_HISTORICO_USUARIO_DATA
     ON TB_A_USUARIO_MUSICA_HISTORICO
     (
@@ -458,16 +453,19 @@ CREATE INDEX IX_SZR_HISTORICO_USUARIO_DATA
     )
 
 
--- 8. Resenhas por música
+-- 8. RESENHA DE MUSICA
+
 CREATE INDEX IX_SZR_RESENHA_MUSICA
     ON TB_SZR_RESENHA (TB_SZR_MUSICA_id_musica)
 
 
--- 9. Arquivos por usuário
+-- 9. ARQUIVOS DO USUARIO
+
 CREATE INDEX IX_SZR_ARQUIVO_USUARIO
     ON TB_SZR_ARQUIVO_RASCUNHO (TB_SZR_USUARIO_id_usuario)
 
 
--- 10. Músicos por habilidade
+-- 10. HABILIDADE DOS MUSICOS
+
 CREATE INDEX IX_SZR_MUSICO_HABILIDADE
     ON TB_A_MUSICO_HABILIDADE (TB_SZR_HABILIDADE_id_habilidade)
