@@ -469,3 +469,182 @@ CREATE INDEX IX_SZR_ARQUIVO_USUARIO
 
 CREATE INDEX IX_SZR_MUSICO_HABILIDADE
     ON TB_A_MUSICO_HABILIDADE (TB_SZR_HABILIDADE_id_habilidade)
+
+
+-- 1. PERFIL PÚBLICO DOS USUÁRIOS
+-- informações públicas do usuário + localização.
+
+CREATE OR ALTER VIEW VW_SZR_USUARIO_PERFIL AS
+SELECT
+    U.id_usuario,
+    U.nm_usuario,
+    U.sg_categoria_usuario,
+    U.bio_usuario,
+    U.url_img_perfil,
+    E.nm_cidade,
+    E.sg_estado
+FROM TB_SZR_USUARIO U
+LEFT JOIN TB_SZR_ENDERECO E
+    ON U.TB_SZR_ENDERECO_id_endereco = E.id_endereco;
+
+
+-- 2. MÚSICAS E SUAS TAGS
+-- relaciona música à tag.
+
+CREATE OR ALTER VIEW VW_SZR_MUSICAS_TAGS AS
+SELECT
+    M.id_musica,
+    M.nm_musica,
+    M.ds_musica,
+    T.id_tag,
+    T.nm_tag
+FROM TB_SZR_MUSICA M
+INNER JOIN TB_A_MUSICA_TAG MT
+    ON M.id_musica = MT.TB_SZR_MUSICA_id_musica
+INNER JOIN TB_SZR_TAG T
+    ON MT.TB_SZR_TAG_id_tag = T.id_tag;
+
+
+-- 3. PLAYLIST COMPLETA
+-- agrupa playlist, criador e músicas relacionadas.
+
+CREATE OR ALTER VIEW VW_SZR_PLAYLISTA_COMPLETA AS
+SELECT
+    P.id_playlist,
+    P.nm_playlist,
+    P.ds_playlist,
+    P.ds_url_img_capa,
+    P.dt_criacao,
+    U.id_usuario,
+    U.nm_usuario,
+    M.id_musica,
+    M.nm_musica,
+    M.ds_url_musica
+FROM TB_SZR_PLAYLIST P
+INNER JOIN TB_SZR_USUARIO U
+    ON P.TB_SZR_USUARIO_id_usuario = U.id_usuario
+INNER JOIN TB_A_PLAYLIST_MUSICA PM
+    ON P.id_playlist = PM.TB_SZR_PLAYLIST_id_playlist
+INNER JOIN TB_SZR_MUSICA M
+    ON PM.TB_SZR_MUSICA_id_musica = M.id_musica;
+
+
+    
+-- 4. MÚSICOS E SUAS HABILIDADES
+-- mostra as habilidades cadastradas para cada músico.
+
+CREATE OR ALTER VIEW VW_SZR_MUSICO_HABILIDADES AS
+SELECT
+    U.id_usuario,
+    U.nm_usuario,
+    H.id_habilidade,
+    H.nm_habilidade
+FROM TB_SZR_USUARIO U
+INNER JOIN TB_A_MUSICO_HABILIDADE MH
+    ON U.id_usuario = MH.TB_SZR_USUARIO_id_usuario
+INNER JOIN TB_SZR_HABILIDADE H
+    ON MH.TB_SZR_HABILIDADE_id_habilidade = H.id_habilidade;
+
+
+-- 5. AUTORIA MUSICAL
+-- identifica autores das músicas.
+
+CREATE OR ALTER VIEW VW_SZR_AUTORIA_MUSICAL AS
+SELECT
+    M.id_musica,
+    M.nm_musica,
+    U.id_usuario,
+    U.nm_usuario
+FROM TB_A_MUSICO_MUSICA_AUTORIA MA
+INNER JOIN TB_SZR_MUSICA M
+    ON MA.TB_SZR_MUSICA_id_musica = M.id_musica
+INNER JOIN TB_SZR_USUARIO U
+    ON MA.TB_SZR_USUARIO_id_usuario = U.id_usuario;
+
+
+
+-- 6. MÚSICAS CURTIDAS
+-- mostra quais usuários curtiram cada música.
+
+CREATE OR ALTER VIEW VW_SZR_MUSICAS_CURTIDAS AS
+SELECT
+    U.id_usuario,
+    U.nm_usuario,
+    M.id_musica,
+    M.nm_musica
+FROM TB_A_USUARIO_MUSICA_CURTIDA C
+INNER JOIN TB_SZR_USUARIO U
+    ON C.TB_SZR_USUARIO_id_usuario = U.id_usuario
+INNER JOIN TB_SZR_MUSICA M
+    ON C.TB_SZR_MUSICA_id_musica = M.id_musica;
+
+
+-- 7. RESENHAS
+-- agrupa resenhas, autores e as músicas avaliadas.
+
+CREATE OR ALTER VIEW VW_SZR_RESENHAS AS
+SELECT
+    R.id_resenha,
+    R.ds_resenha,
+    R.dt_publicacao,
+    U.id_usuario,
+    U.nm_usuario,
+    M.id_musica,
+    M.nm_musica
+FROM TB_SZR_RESENHA R
+INNER JOIN TB_SZR_USUARIO U
+    ON R.TB_SZR_USUARIO_id_usuario = U.id_usuario
+INNER JOIN TB_SZR_MUSICA M
+    ON R.TB_SZR_MUSICA_id_musica = M.id_musica;
+
+
+-- 8. MÚSICAS MAIS CURTIDAS
+-- contagem de curtidas recebidas por cada música.
+
+CREATE OR ALTER VIEW VW_SZR_MUSICAS_MAIS_CURTIDAS AS
+SELECT
+    M.id_musica,
+    M.nm_musica,
+    COUNT(C.TB_SZR_USUARIO_id_usuario) AS nr_curtidas
+FROM TB_SZR_MUSICA M
+LEFT JOIN TB_A_USUARIO_MUSICA_CURTIDA C
+    ON M.id_musica = C.TB_SZR_MUSICA_id_musica
+GROUP BY
+    M.id_musica,
+    M.nm_musica;
+
+
+-- 9. TAGS POPULARES
+-- contagem de uso das tags em músicas e perfis de usuários.
+
+CREATE OR ALTER VIEW VW_SZR_TAGS_POPULARES AS
+SELECT
+    T.id_tag,
+    T.nm_tag,
+    (
+        SELECT COUNT(*)
+        FROM TB_A_MUSICA_TAG MT
+        WHERE MT.TB_SZR_TAG_id_tag = T.id_tag
+    ) AS nr_uso_musicas,
+    (
+        SELECT COUNT(*)
+        FROM TB_A_USUARIO_TAG UT
+        WHERE UT.TB_SZR_TAG_id_tag = T.id_tag
+    ) AS nr_uso_usuarios
+FROM TB_SZR_TAG T;
+
+
+-- 10. DISTRIBUIÇÃO GEOGRÁFICA DOS USUÁRIOS
+-- contagem de usuários por cidade e estado.
+
+CREATE OR ALTER VIEW VW_SZR_DISTRIBUICAO_USUARIOS AS
+SELECT
+    E.nm_cidade,
+    E.sg_estado,
+    COUNT(U.id_usuario) AS nr_usuarios
+FROM TB_SZR_ENDERECO E
+INNER JOIN TB_SZR_USUARIO U
+    ON E.id_endereco = U.TB_SZR_ENDERECO_id_endereco
+GROUP BY
+    E.nm_cidade,
+    E.sg_estado;
